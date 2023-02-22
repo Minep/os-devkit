@@ -57,11 +57,22 @@ sudo docker pull lunaixsky/os-devkit:i386-gcc_x11_v1.0
 
 **Note:** the `run.sh` is essential, which in this case handles all X11 tricks and warts that ensure GUI forwarding works as expected.
 
-The detailed usage of `run.sh` can be found in next section
+The detailed usage of `run.sh` can be found in next section.
+
+However, for those who hated the use of additional script, you can manually config your host x server by using the following procedure:
+
+```
+export _XSOCK=/tmp/.X11-unix
+export _XAUTH=/tmp/.docker.xauth
+xauth nlist "$DISPLAY" | sed -e 's/^..../ffff/' | xauth -f "$XAUTH" nmerge -
+sudo docker run -v "$_XSOCK:$_XSOCK" -v "$_XAUTH:$_XAUTH" \
+    -e "XAUTHORITY=$_XAUTH" -e "DISPLAY=$DISPLAY" \
+    -td lunaixsky/os-devkit:i386-gcc_x11_v1.0
+```
 
 **Step 3:**
 
-Now, the OSDK container will be running in background. You can simple attach a shell session to it using `docker exec`, or use it as devcontainer by attaching to it in vscode, see [here](https://code.visualstudio.com/docs/devcontainers/attach-container#_attach-to-a-docker-container) for more detailed instruction on how to do it.
+Now, the OSDK container will be running in background. You can simply attach a shell session to it using `docker exec`, or use it as devcontainer by attaching to it in vscode, see [here](https://code.visualstudio.com/docs/devcontainers/attach-container#_attach-to-a-docker-container) for more detailed instruction on how to do it.
 
 ## Basic Usage
 
