@@ -4,20 +4,42 @@ function red(){
     echo -e "\e[31m$1\n"
 }
 
-if [ "$1" == --x11 ]; then
-    XSOCK=/tmp/.X11-unix
-    XAUTH=/tmp/.docker.xauth
+startup_args=()
+export_arg=false
 
-    if ! (xauth nlist "$DISPLAY" | sed -e 's/^..../ffff/' | xauth -f "$XAUTH" nmerge -); then
-        red 'fail to configure Xauthority.'
-        exit 255
-    fi
+while ! [ "$1" = -- ] && [ -n "$1" ]; do
+    case "$1" in
+        --x11)
+            XSOCK=/tmp/.X11-unix
+            XAUTH=/tmp/.docker.xauth
 
+            if ! (xauth nlist "$DISPLAY" | sed -e 's/^..../ffff/' | xauth -f "$XAUTH" nmerge -); then
+                red 'fail to configure Xauthority.'
+                exit 255
+            fi
+
+            startup_args+=(-v "$XSOCK:$XSOCK")
+            startup_args+=(-v "$XAUTH:$XAUTH")
+            startup_args+=(-e "XAUTHORITY=$XAUTH")
+            startup_args+=(-e "DISPLAY=$DISPLAY")
+        ;;
+        --export)
+            export_arg=true
+        ;;
+        *)
+            break
+        ;;
+    esac
     shift 1
+done
 
-    sudo docker run -v "$XSOCK:$XSOCK" -v "$XAUTH:$XAUTH" \
-                    -e "XAUTHORITY=$XAUTH" -e "DISPLAY=$DISPLAY" "$@"
-    exit $?
+if [ "$1" = -- ]; then
+    shift 1
 fi
 
-sudo docker run "$@"
+if [ "$export_arg" = true ]; then
+    echo -e "${startup_args[@]}"
+    exit 0
+fi
+
+sudo docker run ${startup_args[@]} "$@"

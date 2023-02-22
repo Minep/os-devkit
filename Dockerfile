@@ -37,22 +37,21 @@ RUN mkdir /os-dev /os-env
 COPY --from=builder /os-env/ /os-env/
 COPY ./os-dev/* /os-dev
 
+ARG frwd_method
+ENV FRWD_METHOD="${frwd_method}"
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PATH="/os-env/bin:${PATH}"
+
 RUN apt-get update && \
     apt-get install -y \
-		build-essential \
-		libgmp3-dev\
-		libmpc-dev\
-		libmpfr-dev\
-        libgtk-3-dev\
-        libcapstone-dev\
-        libvte-dev\
+        build-essential \
+        libgtk-3-0\
+        libcapstone4\
+        libvte9\
         git\
         xorriso\
         grub2-common\
         xfce4-terminal
-
-ARG SETUPFLAGS
-ENV DEBIAN_FRONTEND=noninteractive
 
 RUN chmod +x /os-env/setup.sh
 RUN chmod +x /os-env/entry.sh

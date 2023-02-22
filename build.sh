@@ -23,5 +23,5 @@ function dobuild() {
     fi
 }
 
-dobuild lunaixsky/os-devkit:i386-gcc_x11_v1.0 --build-arg SETUPFLAGS="x11"
-# dobuild lunaixsky/os-devkit:i386-gcc_vnc_v1.0 --build-arg SETUPFLAGS="vnc"
+dobuild lunaixsky/os-devkit:i386-gcc_x11_v1.0 --build-arg frwd_method="x11"
+dobuild lunaixsky/os-devkit:i386-gcc_vnc_v1.0 --build-arg frwd_method="vnc"
