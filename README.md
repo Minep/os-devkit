@@ -1,65 +1,76 @@
+<p align="center">
+  <img width="300" src="/imgs/osdk.png">
+</p>
+
+<p align="center">
+  <a href="#">简体中文</a> | <a href="README_en.md">English</a>
+</p>
+
 # Lunaix OSDK
 
 [![docker](https://img.shields.io/docker/pulls/lunaixsky/os-devkit?style=for-the-badge)](https://hub.docker.com/r/lunaixsky/os-devkit)
 
-Ready-to-use Operating System Development Kit (OSDK), provides basic setup of essential tool-chain and peripheral supports for common OS development cycles. I created this because I keep receiving PMs or emails regarding environment setup since the day I started [my OS dev online course](https://github.com/Minep/lunaix-os). I wish this will mitigate and hopefully releasing me from such burdens.
+Lunaix操作系统开发套件（OSDK）包含了基本的交叉编译工具链配置，以及其他实用的小工具，能够满足基本的操作系统开发需求，如编译，打包，调式。
 
-The kit is based on Ubuntu container image and is aimed to provide following out-of-box setups:
+该开发套件是基于Ubuntu容器镜像（Ubuntu jammy），包含了如下的功能：
 
-+ Toochains for cross compiling the OS to bare-metal target.
-+ Emulators and debugger for debugging.
-+ GUI forwarding for accessing GUI applications (e.g., emulators) from outside of container.
++ 裸机交叉编译器
++ 用于调试的模拟器和调试器
++ GUI转发，用于运行如同模拟器这些具有用户界面的应用。
 
-## Quick Start
+## 快速开始
 
-Suppose you are about to develop an OS targeting x86_32. There are two method to access the kit that allow GUI applications (such as emulators) to work as expected.
+以开发一个针对x86_32架构的OS为例，OSDK的使用可以通过两种方式：
 
-### OSDK via VNC
+1. 基于VNC远程桌面的访问，该访问方式适合非Unix用户使用
+2. 基于X11的GUI转发，非常推荐使用X11作为窗口管理器的用户使用，以获得无缝体验。
+
+### 通过VNC访问
 
 
-**Step 1:** Pull the OSDK built for VNC connection, this build is specified by tag `i386-gcc_vnc_v1.0`. Other build also available.
+**Step 1:** 根据你的OS开发需求，拉取合适的OSDK镜像，不同的版本OSDK由tag来识别，在这里，针对x86_32平台工具链构建的OSDK为 `i386-gcc_vnc_v1.0`。
 
 ```
 sudo docker pull lunaixsky/os-devkit:i386-gcc_vnc_v1.0
 ```
 
-**Step 2:** Invoking
+**Step 2:** 运行该镜像，同时开放VNC的5900端口
 
 ```
 sudo docker run -td -p 5900:5900 lunaixsky/os-devkit:i386-gcc_vnc_v1.0
 ```
 
-You can also pass additional arguments into container, such as setting the resolution of your remote desktop (size of frame buffer) or additional parameters to vnc server. For example, change the resolution to `1920x1080`:
+你也可以往镜像内传入额外的参数，比如可以设置远程桌面的分辨率（即frame buffer的大小）或者是针对VNC服务器的额外选项。举个例子，我们可以将远程连接的分辨率改为1920x1080：
 
 ```
 sudo docker run -td -p 5900:5900 lunaixsky/os-devkit:i386-gcc_vnc_v1.0 --res=1920x1080
 ```
 
-More detailed usage on container options can be found in next section.
+更多关于这类容器参数的用途会在下一节中进行完全介绍。
 
 **Step 3:**
 
-Start your favourite VNC client and connect to `127.0.0.1:5900` to use the kit. The desktop environment is the minimum installation of `xfce`.
+使用VNC客户端链接`127.0.0.1:5900`，OSDK包含最小安装的`xfce`桌面环境。
 
-### OSDK via X11
+### 通过X11访问
 
-**Step 1:** Pull the OSDK built for VNC connection, this build is specified by tag `i386-gcc_x11_v1.0`. Other build also available.
+**Step 1:** 拉取适用于x11的OSDK：`i386-gcc_x11_v1.0`
 
 ```
 sudo docker pull lunaixsky/os-devkit:i386-gcc_x11_v1.0
 ```
 
-**Step 2:** Download or simply copy the content of [run.sh](/run.sh) to your local computer, and bootstrap it by invoking:
+**Step 2:** 下载 [run.sh](/run.sh)，然后使用其去运行镜像
 
 ```
 ./run.sh --x11 -td lunaixsky/os-devkit:i386-gcc_x11_v1.0
 ```
 
-**Note:** the `run.sh` is essential, which in this case handles all X11 tricks and warts that ensure GUI forwarding works as expected.
+**注意：** 该脚将会负责配置主机的X11服务器，以便容器进行桥接。
 
-The detailed usage of `run.sh` can be found in next section.
+`run.sh`也包含一切其他的功能，请参考下一节。
 
-However, for those who hated the use of additional script, you can manually config your host x server by using the following procedure:
+如果你懒得下载这个脚本，你也可以通过一下步骤手动对X11服务器进行配置，并且运行镜像：
 
 ```
 export _XSOCK=/tmp/.X11-unix
@@ -72,81 +83,83 @@ sudo docker run -v "$_XSOCK:$_XSOCK" -v "$_XAUTH:$_XAUTH" \
 
 **Step 3:**
 
-Now, the OSDK container will be running in background. You can simply attach a shell session to it using `docker exec`, or use it as devcontainer by attaching to it in vscode, see [here](https://code.visualstudio.com/docs/devcontainers/attach-container#_attach-to-a-docker-container) for more detailed instruction on how to do it.
+这时，OSDK应该会在后台运行。您可以使用`docker exec`挂载一个shell回话到OSDK容器，或者使用vscode的devcontainer功能连接到OSDK以进行远程开发，关于devcontainer的具体用法请参考[这里](https://code.visualstudio.com/docs/devcontainers/attach-container#_attach-to-a-docker-container)。
 
-## Basic Usage
+## 一些基本用法
 
-### Basic usage of `run.sh`
+### `run.sh`用法
 
 ```
 ./run.sh [OPTIONS ...] [DOCKER RUN OPTIONS ...] IMAGE_NAME [ARGS]
 
 OPTIONS:
-    --x11       use x11 forwarding (works with image configured to use x11)
-    --export    print docker un arguments (useful to export x11 config)
+    --x11       使用x11转发
+    --export    导出docker run的配置选项
 
 DOCKER RUN OPTIONS:
-    ...     Any valid docker run options
+    ...     任何docker run选项
 
 IMAGE_NAME:
-    The image that you wish to run
+    需要运行的镜像名称
 
 ARGS:
-    ...     Arguments to entrypoint script (see below)
+    ...     传入容器的选项
 ```
 
-### Additional options to container
+### 容器选项
 
-The entrypoint scripts is executed immediately after container startup, which will performs essential initialization and configuration of environment. Arguments can be passed to customize this step:
+容器在启动时会运行入口点脚本进行初始化工作，您可以传入一些额外的选项来控制这一初始化过程。
 
 ```
 [OPTION ...] [-- [COMMANDS ...]]
 
 OPTION:
-    --vnc-args=[...]    additional arguments to vnc server (see man page for x11vnc)
-    --res=WxH           set the frame buffer with size width (W) and height (H), in pixels. 
-                        Default to 1280x720
+    --vnc-args=[...]    传入VNC服务器的额外指令（详见x11vnc的man界面）
+    --res=WxH           设置frame buffer大小（渲染分辨率），宽度W和高度H，以像素为单位。 
+                        默认为1280x720
 
 COMMANDS:
-    ...                 command to execute in post stage.
+    ...                 在初始化完成之后执行的任意命令
 ```
 
-## Tags of the Day
+## 可供使用的OSDK们
 
-All tags follow the same pattern:
+不同的OSDK有着不同的用途和配置，由镜像的tag来区分，并遵循以下格式：
 
 ```
-<arch>-<toolchain>_<forwarding method>_<version>
+<架构>-<构建工具链>_<GUI转发方式>_<版本>
 ```
 
-For example: `i386-gcc_x11_v1.0` stands for:
+举个例子: `i386-gcc_x11_v1.0` 描述的是这样一个容器:
 
-+ Targeted to i386 architecture (x86_32)
-+ GCC as cross compiling toolchain
-+ GUI is forwarded to host via vanilla X11
-+ version 1.0
++ 针对x86_32处理器架构的交叉编译器
++ 使用GCC作为构建工具链
++ 使用X11进行GUI转发
++ 版本 1.0
 
-A list of all currently supported tags given below:
+目前可供选择的OSDK:
 
 + `i386-gcc_x11_v1.0`
 + `i386-gcc_vnc_v1.0`
 
-## Built-in Software
+## OSDK封装的软件
 
-Each container will contains the following packages/software for OS development assistance:
+下面描述一个OSDK会封装的软件列表：
 
-+ Cross-compiling toolchain
-+ Packaging toolchain
++ 交叉编译工具链
++ OS镜像打包工具链
   + xorriso
   + grub2
-+ Emulators:
-  + Bochs (for x86 build)
-  + QEMU (all platform build)
++ 模拟器:
+  + Bochs (仅限x86平台)
+  + QEMU
 + git
 + libgtk-3-dev
 + xfce4-terminal
-+ x11vnc, xvfb, xfce4 (for vnc remote desktop)
++ x11vnc, xvfb, xfce4 (仅限vnc转发方式)
 
-## Issues
+## Issue和建议
 
-Open an issue if your encounter any setup related problem.
+如有任何问题或建议，欢迎提issue。
+
+贡献请发Pull Request
